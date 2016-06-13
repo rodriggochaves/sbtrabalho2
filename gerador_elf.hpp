@@ -1,8 +1,5 @@
-#include <iostream>
-#include <elfio/elfio.hpp>
-
-class GeradorElf {
+class Gerador_elf {
 public:
-	GeradorElf();
+	Gerador_elf();
 	void teste();
 };

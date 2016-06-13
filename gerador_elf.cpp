@@ -1,10 +1,11 @@
 #include <iostream>
+#include <elfio/elfio.hpp>
 #include "gerador_elf.hpp"
 
-GeradorElf::GeradorElf() {
+Gerador_elf::Gerador_elf() {
 	std::cout << "Olá" << std::endl;
 }
 
-void GeradorElf::teste() {
+void Gerador_elf::teste() {
 	std::cout << "Pudim" << std::endl;
 }

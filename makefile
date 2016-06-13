@@ -9,7 +9,7 @@ gerador_elf:
 
 main: gerador_elf
 	$(CC) $(LIBS) -c main.cpp
-	$(CC) $(LIBS) -o main main.o gerador_elf.o
+	$(CC) $(LIBS) -o main gerador_elf.o main.o
 
 clean:
 	rm -f gerador_elf.o

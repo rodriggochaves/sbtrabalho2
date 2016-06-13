@@ -2,6 +2,6 @@
 #include "gerador_elf.hpp"
 
 int main(int argc, char const *argv[]) {
-	GeradorElf geradorElf();
+	Gerador_elf gerador_elf();
 	return 0;
 }
