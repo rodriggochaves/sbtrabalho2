@@ -2,6 +2,11 @@
 #include "gerador_elf.hpp"
 
 int main(int argc, char const *argv[]) {
-	GeradorElf geradorElf;
-  geradorElf.teste();
+  if (argc != 2) {
+    std::cout << "Número incorreto de argumentos" << std::endl;
+    return 1;
+  }
+
+	GeradorElf geradorElf(argv[1]);
+  geradorElf.processFile();
 }

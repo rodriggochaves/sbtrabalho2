@@ -1,6 +1,9 @@
 #include <iostream>
+#include <fstream>
 
 class GeradorElf {
-public:
-	GeradorElf();
+  std::ifstream file;
+  public:
+	  GeradorElf(std::string);
+    void processFile();
 };
