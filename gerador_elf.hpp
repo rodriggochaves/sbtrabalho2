@@ -6,4 +6,5 @@ class GeradorElf {
   public:
 	  GeradorElf(std::string);
     void processFile();
+    void createFile();
 };
