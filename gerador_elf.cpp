@@ -51,7 +51,7 @@ void GeradorElf::createFile(char text[], char data[]) {
   data_sec->get_addr_align() );
   
   writer.set_entry( 0x08048000 );
-  writer.save( "hello_i386_32" ); 
+  writer.save( "executable" ); 
 }
 
 void GeradorElf::processFile() {
