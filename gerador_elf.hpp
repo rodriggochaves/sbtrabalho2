@@ -6,5 +6,5 @@ class GeradorElf {
   public:
 	  GeradorElf(std::string);
     void processFile();
-    void createFile(char text[], char data[]);
+    void createFile(std::vector<char> text, char* data);
 };
