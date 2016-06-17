@@ -1,5 +1,10 @@
-class Gerador_elf {
-public:
-	Gerador_elf();
-	void teste();
+#include <iostream>
+#include <fstream>
+
+class GeradorElf {
+  std::ifstream file;
+  public:
+	  GeradorElf(std::string);
+    void processFile();
+    void createFile();
 };
