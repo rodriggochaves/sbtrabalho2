@@ -10,7 +10,7 @@ GeradorElf::GeradorElf(std::string namefile) {
   }
 }
 
-void GeradorElf::createFile() {
+void GeradorElf::createFile(char text[], char data[]) {
   ELFIO::elfio writer;
 
   writer.create( ELFCLASS32, ELFDATA2LSB );
@@ -23,14 +23,6 @@ void GeradorElf::createFile() {
   text_sec->set_type(SHT_PROGBITS);
   text_sec->set_flags( SHF_ALLOC | SHF_EXECINSTR );
   text_sec->set_addr_align( 0x10 );
-
-  char text[] = { '\xB8', '\x04', '\x00', '\x00', '\x00', // mov eax, 4
-                  '\xBB', '\x01', '\x00', '\x00', '\x00', // mov ebx, 1
-                  '\xB9', '\x20', '\x80', '\x04', '\x08', // mov ecx, msg
-                  '\xBA', '\x0E', '\x00', '\x00', '\x00', // mov edx, 14
-                  '\xCD', '\x80', // int 0x80
-                  '\xB8', '\x01', '\x00', '\x00', '\x00', // mov eax, 1
-                  '\xCD', '\x80' }; // int 0x80
 
   text_sec->set_data( text, sizeof( text ) );
   ELFIO::segment* text_seg = writer.segments.add();
@@ -46,9 +38,7 @@ void GeradorElf::createFile() {
   data_sec->set_type( SHT_PROGBITS );
   data_sec->set_flags( SHF_ALLOC | SHF_WRITE );
   data_sec->set_addr_align( 0x4 );
-  char data[] = { '\x48', '\x65', '\x6C', '\x6C', '\x6F', // “Hello, World!\n”
-  '\x2C', '\x20', '\x57', '\x6F', '\x72',
-  '\x6C', '\x64', '\x21', '\x0A' };
+  
   data_sec->set_data( data, sizeof( data ) );
 
   ELFIO::segment* data_seg = writer.segments.add();

@@ -8,5 +8,18 @@ int main(int argc, char const *argv[]) {
   }
 
 	GeradorElf geradorElf(argv[1]);
-  geradorElf.createFile();
+
+	char text[] = { '\xB8', '\x04', '\x00', '\x00', '\x00', // mov eax, 4
+                  '\xBB', '\x01', '\x00', '\x00', '\x00', // mov ebx, 1
+                  '\xB9', '\x20', '\x80', '\x04', '\x08', // mov ecx, msg
+                  '\xBA', '\x0E', '\x00', '\x00', '\x00', // mov edx, 14
+                  '\xCD', '\x80', // int 0x80
+                  '\xB8', '\x01', '\x00', '\x00', '\x00', // mov eax, 1
+                  '\xCD', '\x80' }; // int 0x80
+
+  char data[] = { '\x48', '\x65', '\x6C', '\x6C', '\x6F', // “Hello, World!\n”
+  '\x2C', '\x20', '\x57', '\x6F', '\x72',
+  '\x6C', '\x64', '\x21', '\x0A' };
+
+  geradorElf.createFile(text, data);
 }
