@@ -10,8 +10,8 @@ GeradorElf::GeradorElf(std::string namefile) {
   }
 }
 
-void GeradorElf::createFile(std::vector<char> text, char* data) {
-  std::cout << sizeof( text ) << std::endl;
+void GeradorElf::createFile(std::vector<char>& text, std::vector<char>& data) {
+  reinterpret_cast<char*>(text.data());
 
   // ELFIO::elfio writer;
 
