@@ -12,6 +12,8 @@ int main(int argc, char const *argv[]) {
 
 	GeradorElf geradorElf(argv[1]);
 
+  geradorElf.readFile(); 
+
 	std::string text = { '\xB8', '\x04', '\x00', '\x00', 
 									'\x00', // mov eax, 4
                   '\xBB', '\x01', '\x00', '\x00', '\x00', // mov ebx, 1
@@ -21,9 +23,11 @@ int main(int argc, char const *argv[]) {
                   '\xB8', '\x01', '\x00', '\x00', '\x00', // mov eax, 1
                   '\xCD', '\x80' }; // int 0x80
 
-  std::string data = { '\x48', '\x65', '\x6C', '\x6C', 
-  '\x6F','\x2C', '\x20', '\x57', '\x6F', '\x72', // “Hello, World!\n”
-  '\x6C', '\x64', '\x21', '\x0A' };
+  // std::string data = { '\x48', '\x65', '\x6C', '\x6C', 
+  // '\x6F','\x2C', '\x20', '\x57', '\x6F', '\x72', // “Hello, World!\n”
+  // '\x6C', '\x64', '\x21', '\x0A' };
 
-  geradorElf.createFile(text, data);
+  // std::cout << data << std::endl;
+
+  geradorElf.createFile(text);
 }

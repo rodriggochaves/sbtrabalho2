@@ -16,3 +16,12 @@
 
 # added by GitSavvy
 /output
+
+# added by GitSavvy
+/a.out
+
+# added by GitSavvy
+/.gitignore
+
+# added by GitSavvy
+/ex1.o

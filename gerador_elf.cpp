@@ -2,7 +2,9 @@
 #include <typeinfo>
 #include <elfio/elfio.hpp>
 #include "gerador_elf.hpp"
+#include <sstream>
 #include <string>
+#include <algorithm>
 
 GeradorElf::GeradorElf(std::string namefile) {
   this->file.open(namefile);
@@ -12,8 +14,80 @@ GeradorElf::GeradorElf(std::string namefile) {
   }
 }
 
-void GeradorElf::createFile(std::string text, std::string data) {
+std::string GeradorElf::processDataLine(std::string line) {
+  std::string symbol;
+  std::string type;
+  std::string value;
+  int counter = 0;
 
+  for (unsigned int i = 0; i < line.length(); ++i) {
+    if(line[i] == ' ' && counter < 2) {
+      counter++;
+      continue;
+    }
+    if (counter == 0) {
+      symbol += line[i];
+      continue;
+    }
+    if (counter == 1) {
+      type += line[i];
+      continue;
+    }
+    if (counter >= 2) {
+      value += line[i];
+      continue;
+    }
+  }
+
+  // trata value
+  if (value[0] == '\'') {
+    int closeMark = value.find('\'', 1);
+    std::string extraChars = value.substr(closeMark + 1, value.length());
+    std::string extraChar;
+
+    value = value.substr(0, closeMark);
+    value.erase(std::remove(value.begin(), value.end(), '\''), value.end());
+
+    for (unsigned int i = 0; i < extraChars.length(); ++i) {
+      if (extraChars[i] == ' ') continue;
+      if (extraChars[i] == 'h') {
+        extraChar = extraChars[i - 2] + extraChars[i - 1];
+      }
+      if (extraChars[i] == '0' && extraChars[i+1] == 'x') {
+        extraChar = extraChars[i+1] + extraChars[i+2];
+      }
+      value += extraChar;
+    }
+  }
+
+  return value;
+}
+
+void GeradorElf::readFile() {
+  std::string line;
+  bool inSectionData = false;
+  bool inSectionText = false;
+  bool pause = true;
+  
+  while( getline(this->file, line) ) {
+    if (line == "section .data") {
+      inSectionText = false;
+      inSectionData = true;
+      pause = false;
+    }
+    if (line == "section .text") {
+      inSectionText = true;
+      inSectionData = false; 
+      pause = false;
+    }
+    if ( inSectionData && pause ) {
+      this->data += this->processDataLine( line );
+    }
+    pause = true;
+  }
+}
+
+void GeradorElf::createFile(std::string text ) {
   ELFIO::elfio writer;
 
   writer.create( ELFCLASS32, ELFDATA2LSB );
@@ -44,7 +118,7 @@ void GeradorElf::createFile(std::string text, std::string data) {
   data_sec->set_addr_align( 0x4 );
   
   // data_sec->set_data( data, sizeof( data ) );
-  data_sec->set_data( data );
+  data_sec->set_data( this->data );
   ELFIO::segment* data_seg = writer.segments.add();
   data_seg->set_type( PT_LOAD );
   data_seg->set_virtual_address( 0x08048020 );
@@ -56,12 +130,4 @@ void GeradorElf::createFile(std::string text, std::string data) {
   
   writer.set_entry( 0x08048000 );
   writer.save( "output" ); 
-}
-
-void GeradorElf::processFile() {
-  std::string line;
-  
-  while( getline(this->file, line) ) {
-    // std::cout << line << std::endl;
-  }
 }
