@@ -17,7 +17,21 @@ GeradorElf::GeradorElf(std::string namefile) {
 char GeradorElf::convertToHex(char c) {
   switch(c) {
     case '0' : return '\x0';
+    case '1' : return '\x1';
+    case '2' : return '\x2';
+    case '3' : return '\x3';
+    case '4' : return '\x4';
+    case '5' : return '\x5';
+    case '6' : return '\x6';
+    case '7' : return '\x7';
+    case '8' : return '\x8';
+    case '9' : return '\x9';
     case 'a' : return '\xA';
+    case 'b' : return '\xB';
+    case 'c' : return '\xC';
+    case 'd' : return '\xD';
+    case 'e' : return '\xE';
+    case 'f' : return '\xF';
     default : return 0;
   }
 }
@@ -74,6 +88,52 @@ std::string GeradorElf::processDataLine(std::string line) {
   return value;
 }
 
+bool Both_are_spaces(char lhs, char rhs) {
+  return (lhs == rhs) && (lhs == ' '); 
+}
+
+// recebe uma linha e remove multiplos espaços consecutivos
+std::string GeradorElf::removeMultipleSpaces(std::string line) {
+  std::string newline;
+
+  std::string::iterator new_end = std::unique(line.begin(), line.end(), 
+    Both_are_spaces);
+  line.erase(new_end, line.end());
+  newline = line;
+  
+  // caso a linha comece com um espaço, esse espaço é removido.
+  if (newline[0] == ' ') {
+    newline.erase(0, 1);
+  }
+
+  return newline;
+}
+
+std::vector<std::string> GeradorElf::tokenize(std::string line) {
+  std::vector<std::string> tokens;
+  std::string aux = "";
+
+  line = this->removeMultipleSpaces(line);
+
+  std::cout << line << std::endl;
+
+  for (unsigned int i = 0; i < line.length(); ++i) {
+    if (line[i] != ' ' || (line[i] != ',' && line[i+1] != ' ')) {
+      aux += line[i];
+    } else {
+      tokens.push_back(aux);
+      aux = "";
+    }
+  }
+
+  return tokens;
+}
+
+std::string GeradorElf::processTextLine(std::string line) {
+  std::vector<std::string> tokens = this->tokenize(line);
+  return "0";
+}
+
 void GeradorElf::readFile() {
   std::string line;
   bool inSectionData = false;
@@ -94,11 +154,14 @@ void GeradorElf::readFile() {
     if ( inSectionData && pause ) {
       this->data += this->processDataLine( line );
     }
+    if ( inSectionText && pause ) {
+      this->text += this->processTextLine( line );
+    }
     pause = true;
   }
 }
 
-void GeradorElf::createFile(std::string text ) {
+void GeradorElf::createFile() {
   ELFIO::elfio writer;
 
   writer.create( ELFCLASS32, ELFDATA2LSB );
@@ -113,7 +176,7 @@ void GeradorElf::createFile(std::string text ) {
   text_sec->set_addr_align( 0x10 );
 
   // text_sec->set_data( text, sizeof( text ) );
-  text_sec->set_data( text );
+  text_sec->set_data( this->text );
   ELFIO::segment* text_seg = writer.segments.add();
   text_seg->set_type( PT_LOAD );
   text_seg->set_virtual_address( 0x08048000 );

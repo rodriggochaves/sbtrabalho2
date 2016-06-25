@@ -19,3 +19,6 @@ clean:
 	rm -f main.o
 	rm -f main
 	rm -f output
+
+exec:
+	chmod 755 output

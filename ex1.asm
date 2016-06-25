@@ -2,8 +2,8 @@ section .data
 msg db 'Hello World!', 0ah
 
 section .text
-global _start
-_start:
+global _start  
+  _start:  
   mov eax, 4
   mov ebx, 1
   mov ecx, msg
