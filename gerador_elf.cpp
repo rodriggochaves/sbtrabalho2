@@ -57,7 +57,7 @@ dataNode GeradorElf::processDataNode( dataNode node ) {
     node.value = node.value + complementString;
   }
 
-  if (node.type == "dd" && !this->isString(node) ) {
+  if (node.type == "db" && !this->isString(node) ) {
     for (unsigned int i = 0; i < node.value.length(); ++i) {
       node.value[i] = this->convertToHex(node.value[i]);
     }
