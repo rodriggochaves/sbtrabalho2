@@ -36,11 +36,13 @@ char GeradorElf::convertToHex(char c) {
   }
 }
 
+std::string GeradorElf::assembleMOV(std::vector<std::string> tokens) {
+  return "0";
+}
 
-std::string GeradorElf::processDataLine(std::string line) {
-  std::string symbol;
-  std::string type;
-  std::string value;
+
+dataNode GeradorElf::processDataLine(std::string line) {
+  dataNode node;
   int counter = 0;
 
   for (unsigned int i = 0; i < line.length(); ++i) {
@@ -49,43 +51,24 @@ std::string GeradorElf::processDataLine(std::string line) {
       continue;
     }
     if (counter == 0) {
-      symbol += line[i];
+      node.symbol += line[i];
       continue;
     }
     if (counter == 1) {
-      type += line[i];
+      node.type += line[i];
       continue;
     }
     if (counter >= 2) {
-      value += line[i];
+      node.value += line[i];
       continue;
     }
   }
 
-  // trata value
-  if (value[0] == '\'') {
-    int closeMark = value.find('\'', 1);
-    std::string extraChars = value.substr(closeMark + 1, value.length());
-    std::string extraChar;
+  std::cout << node.symbol << std::endl;
+  std::cout << node.type << std::endl;
+  std::cout << node.value << std::endl;
 
-    value = value.substr(0, closeMark);
-    value.erase(std::remove(value.begin(), value.end(), '\''), value.end());
-
-    for (unsigned int i = 0; i < extraChars.length(); ++i) {
-      if (extraChars[i] == ' ') continue;
-      if (extraChars[i] == 'h') {
-        extraChar = this->convertToHex(extraChars[i - 2]);
-        extraChar += this->convertToHex(extraChars[i - 1]);
-      }
-      if (extraChars[i] == '0' && extraChars[i+1] == 'x') {
-        value += extraChars[i+1];
-        value += extraChars[i+2];
-      }
-      value += extraChar;
-      extraChar = "";
-    }
-  }
-  return value;
+  return node;
 }
 
 bool Both_are_spaces(char lhs, char rhs) {
@@ -129,17 +112,18 @@ std::vector<std::string> GeradorElf::tokenize(std::string line) {
       aux += line[i];
     }
   }
-
   if (!aux.empty()) tokens.push_back(aux);
-
   return tokens;
 }
 
 std::string GeradorElf::processTextLine(std::string line) {
   std::vector<std::string> tokens = this->tokenize(line);
+  std::string code = "";
   
   if (tokens[0] == "global") return  "";
-  if (tokens[0] == "mov") this->assembleMOV(tokens);
+  if (tokens[0] == "mov") code = this->assembleMOV(tokens);
+
+  return "0";
 }
 
 void GeradorElf::readFile() {
@@ -147,9 +131,13 @@ void GeradorElf::readFile() {
   bool inSectionData = false;
   bool inSectionText = false;
   bool pause = true;
+  dataNode node;
   
   while( getline(this->file, line) ) {
-    if (line == "section .data") {
+    if ( line.empty() ) {
+      continue;
+    }
+    if ( line == "section .data" ) {
       inSectionText = false;
       inSectionData = true;
       pause = false;
@@ -160,10 +148,11 @@ void GeradorElf::readFile() {
       pause = false;
     }
     if ( inSectionData && pause ) {
-      this->data += this->processDataLine( line );
+      node = this->processDataLine( line );
+      this->data += node.value;
     }
     if ( inSectionText && pause ) {
-      this->text += this->processTextLine( line );
+      // this->text += this->processTextLine( line );
     }
     pause = true;
   }
@@ -208,7 +197,7 @@ void GeradorElf::createFile() {
   data_seg->set_flags( PF_W | PF_R );
   data_seg->set_align( 0x10 );
   data_seg->add_section_index( data_sec->get_index(),
-  data_sec->get_addr_align() );
+    data_sec->get_addr_align() );
   
   writer.set_entry( 0x08048000 );
   writer.save( "output" ); 
