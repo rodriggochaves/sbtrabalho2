@@ -14,6 +14,14 @@ GeradorElf::GeradorElf(std::string namefile) {
   }
 }
 
+char GeradorElf::convertToHex(char c) {
+  switch(c) {
+    case '0' : return '\x0';
+    case 'a' : return '\xA';
+    default : return 0;
+  }
+}
+
 
 std::string GeradorElf::processDataLine(std::string line) {
   std::string symbol;
@@ -52,13 +60,15 @@ std::string GeradorElf::processDataLine(std::string line) {
     for (unsigned int i = 0; i < extraChars.length(); ++i) {
       if (extraChars[i] == ' ') continue;
       if (extraChars[i] == 'h') {
-        value += extraChars[i - 2];
-        value += extraChars[i - 1];
+        extraChar = this->convertToHex(extraChars[i - 2]);
+        extraChar += this->convertToHex(extraChars[i - 1]);
       }
       if (extraChars[i] == '0' && extraChars[i+1] == 'x') {
-        extraChar = extraChars[i+1] + extraChars[i+2];
+        value += extraChars[i+1];
+        value += extraChars[i+2];
       }
-      // value += extraChar;
+      value += extraChar;
+      extraChar = "";
     }
   }
   return value;

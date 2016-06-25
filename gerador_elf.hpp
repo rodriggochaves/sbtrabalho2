@@ -8,6 +8,7 @@ class GeradorElf {
 	  GeradorElf(std::string);
     void processFile();
     void readFile();
+    char convertToHex(char c);
     std::string processDataLine(std::string line);
     void createFile(std::string text);
 };
