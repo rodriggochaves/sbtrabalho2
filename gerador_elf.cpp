@@ -9,14 +9,11 @@
 GeradorElf::GeradorElf(std::string namefile) {
   this->file.open(namefile);
   if (!this->file.is_open()) {
-    std::cout << "Error ao abrir o arquivo" << std::endl;
-    exit(0);
   }
 }
 
 char GeradorElf::convertToHex(char c) {
   switch(c) {
-    case '0' : return '\x0';
     case '1' : return '\x1';
     case '2' : return '\x2';
     case '3' : return '\x3';
@@ -24,7 +21,7 @@ char GeradorElf::convertToHex(char c) {
     case '5' : return '\x5';
     case '6' : return '\x6';
     case '7' : return '\x7';
-    case '8' : return '\x8';
+    // case '8' : return '\x8';
     case '9' : return '\x9';
     case 'a' : return '\xA';
     case 'b' : return '\xB';
@@ -40,15 +37,26 @@ std::string GeradorElf::assembleMOV(std::vector<std::string> tokens) {
   return "0";
 }
 
+bool GeradorElf::isString( dataNode node ) {
+  return node.value[0] == '\'' ? true : false ;
+}
 
 dataNode GeradorElf::processDataNode( dataNode node ) {
-  std::cout << node.type << std::endl;
-  std::cout << node.value << std::endl;
+  std::string complementString = "";
   int complement = 0;
 
-  if (node.type == "dd") {
-    complement = 8 - value.length();
+  if (node.type == "dd" && !this->isString(node) ) {
+    complement = 8 - node.value.length();
+    while(complement != 0) {
+      complementString += '0';
+      complement--;
+    }
+    node.value = complementString + node.value;
   }
+
+  // std::cout << node.value << std::endl;
+
+  return node;
 }
 
 dataNode GeradorElf::processDataLine(std::string line) {
@@ -74,9 +82,11 @@ dataNode GeradorElf::processDataLine(std::string line) {
     }
   }
 
-  std::cout << node.symbol << std::endl;
-  std::cout << node.type << std::endl;
-  std::cout << node.value << std::endl;
+  // std::cout << node.symbol << std::endl;
+  // std::cout << node.type << std::endl;
+  // std::cout << node.value << std::endl;
+  
+  node = this->processDataNode(node);
 
   return node;
 }
@@ -169,6 +179,15 @@ void GeradorElf::readFile() {
 }
 
 void GeradorElf::createFile() {
+  std::string text = { '\xB8', '\x04', '\x00', '\x00', 
+                  '\x00', // mov eax, 4
+                  '\xBB', '\x01', '\x00', '\x00', '\x00', // mov ebx, 1
+                  '\xB9', '\x20', '\x80', '\x04', '\x08', // mov ecx, msg
+                  '\xBA', '\x0E', '\x00', '\x00', '\x00', // mov edx, 14
+                  '\xCD', '\x80', // int 0x80
+                  '\xB8', '\x01', '\x00', '\x00', '\x00', // mov eax, 1
+                  '\xCD', '\x80' }; // int 0x80
+
   ELFIO::elfio writer;
 
   writer.create( ELFCLASS32, ELFDATA2LSB );
@@ -183,7 +202,7 @@ void GeradorElf::createFile() {
   text_sec->set_addr_align( 0x10 );
 
   // text_sec->set_data( text, sizeof( text ) );
-  text_sec->set_data( this->text );
+  text_sec->set_data( text );
   ELFIO::segment* text_seg = writer.segments.add();
   text_seg->set_type( PT_LOAD );
   text_seg->set_virtual_address( 0x08048000 );
