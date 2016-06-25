@@ -137,7 +137,9 @@ std::vector<std::string> GeradorElf::tokenize(std::string line) {
 
 std::string GeradorElf::processTextLine(std::string line) {
   std::vector<std::string> tokens = this->tokenize(line);
-  return "0";
+  
+  if (tokens[0] == "global") return  "";
+  if (tokens[0] == "mov") this->assembleMOV(tokens);
 }
 
 void GeradorElf::readFile() {
