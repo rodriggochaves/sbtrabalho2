@@ -21,7 +21,7 @@ char GeradorElf::convertToHex(char c) {
     case '5' : return '\x5';
     case '6' : return '\x6';
     case '7' : return '\x7';
-    // case '8' : return '\x8';
+    case '8' : return '\x8';
     case '9' : return '\x9';
     case 'a' : return '\xA';
     case 'b' : return '\xB';
@@ -89,7 +89,9 @@ dataNode GeradorElf::processDataLine(std::string line) {
   // std::cout << node.type << std::endl;
   // std::cout << node.value << std::endl;
   
-  node = this->processDataNode(node);
+  node = this->processDataNode( node );
+
+  // std::cout << node.value << std::endl;  
 
   return node;
 }
@@ -172,6 +174,7 @@ void GeradorElf::readFile() {
     }
     if ( inSectionData && pause ) {
       node = this->processDataLine( line );
+      // std::cout << node.value << std::endl;
       this->data += node.value;
     }
     if ( inSectionText && pause ) {
@@ -179,6 +182,10 @@ void GeradorElf::readFile() {
     }
     pause = true;
   }
+
+  // for (int i = 0; i < this->data.length(); ++i)
+  //     printf("%01x", this->data[i]);
+  //   std::cout << std::endl;
 }
 
 void GeradorElf::createFile() {
