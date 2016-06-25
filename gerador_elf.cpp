@@ -14,6 +14,7 @@ GeradorElf::GeradorElf(std::string namefile) {
   }
 }
 
+
 std::string GeradorElf::processDataLine(std::string line) {
   std::string symbol;
   std::string type;
@@ -51,15 +52,15 @@ std::string GeradorElf::processDataLine(std::string line) {
     for (unsigned int i = 0; i < extraChars.length(); ++i) {
       if (extraChars[i] == ' ') continue;
       if (extraChars[i] == 'h') {
-        extraChar = extraChars[i - 2] + extraChars[i - 1];
+        value += extraChars[i - 2];
+        value += extraChars[i - 1];
       }
       if (extraChars[i] == '0' && extraChars[i+1] == 'x') {
         extraChar = extraChars[i+1] + extraChars[i+2];
       }
-      value += extraChar;
+      // value += extraChar;
     }
   }
-
   return value;
 }
 
