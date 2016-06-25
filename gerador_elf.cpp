@@ -115,16 +115,22 @@ std::vector<std::string> GeradorElf::tokenize(std::string line) {
 
   line = this->removeMultipleSpaces(line);
 
-  std::cout << line << std::endl;
+  // std::cout << line << std::endl;
 
   for (unsigned int i = 0; i < line.length(); ++i) {
-    if (line[i] != ' ' || (line[i] != ',' && line[i+1] != ' ')) {
-      aux += line[i];
-    } else {
+    if ( line[i] == ' ' ) {
       tokens.push_back(aux);
       aux = "";
+    } else if ( line[i] == ',' && line[i + 1] == ' ' ) {
+      tokens.push_back(aux);
+      aux = "";
+      i = i + 1;
+    } else {
+      aux += line[i];
     }
   }
+
+  if (!aux.empty()) tokens.push_back(aux);
 
   return tokens;
 }
