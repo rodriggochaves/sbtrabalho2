@@ -19,6 +19,12 @@ clean:
 	rm -f main.o
 	rm -f main
 	rm -f output
+	rm -f ex0.o
+	rm -f ex0
 
 exec:
 	chmod 755 output
+
+ex0:
+	nasm -f elf ex0.asm -o ex0.o
+	ld -m elf_i386 -o ex0 ex0.o
