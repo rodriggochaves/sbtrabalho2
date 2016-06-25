@@ -41,6 +41,16 @@ std::string GeradorElf::assembleMOV(std::vector<std::string> tokens) {
 }
 
 
+dataNode GeradorElf::processDataNode( dataNode node ) {
+  std::cout << node.type << std::endl;
+  std::cout << node.value << std::endl;
+  int complement = 0;
+
+  if (node.type == "dd") {
+    complement = 8 - value.length();
+  }
+}
+
 dataNode GeradorElf::processDataLine(std::string line) {
   dataNode node;
   int counter = 0;

@@ -18,6 +18,7 @@ class GeradorElf {
     void readFile();
     char convertToHex(char c);
     std::vector<std::string> tokenize(std::string line);
+    dataNode processDataNode( dataNode node );
     dataNode processDataLine(std::string line);
     std::string processTextLine(std::string line);
     std::string assembleMOV(std::vector<std::string> line);
