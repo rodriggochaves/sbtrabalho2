@@ -45,11 +45,11 @@ dataNode GeradorElf::processDataNode( dataNode node ) {
   std::string complementString = "";
   int complement = 0;
 
-  if (node.type == "dd" && !this->isString(node) ) {
+  if (node.type == "dw" && !this->isString(node) ) {
     for (unsigned int i = 0; i < node.value.length(); ++i) {
       node.value[i] = this->convertToHex(node.value[i]);
     }
-    complement = (8 - node.value.length()) / 2;
+    complement = (4 - node.value.length()) / 2;
     while(complement != 0) {
       complementString += '\x0';
       complement--;
@@ -57,7 +57,17 @@ dataNode GeradorElf::processDataNode( dataNode node ) {
     node.value = node.value + complementString;
   }
 
-  // std::cout << node.value << std::endl;
+  if (node.type == "dd" && !this->isString(node) ) {
+    for (unsigned int i = 0; i < node.value.length(); ++i) {
+      node.value[i] = this->convertToHex(node.value[i]);
+    }
+    complement = (2 - node.value.length()) / 2;
+    while(complement != 0) {
+      complementString += '\x0';
+      complement--;
+    }
+    node.value = node.value + complementString;
+  }
 
   return node;
 }
@@ -174,18 +184,14 @@ void GeradorElf::readFile() {
     }
     if ( inSectionData && pause ) {
       node = this->processDataLine( line );
-      // std::cout << node.value << std::endl;
+      std::cout << node.value << std::endl;
       this->data += node.value;
     }
     if ( inSectionText && pause ) {
-      // this->text += this->processTextLine( line );
+      this->text += this->processTextLine( line );
     }
     pause = true;
   }
-
-  // for (int i = 0; i < this->data.length(); ++i)
-  //     printf("%01x", this->data[i]);
-  //   std::cout << std::endl;
 }
 
 void GeradorElf::createFile() {
