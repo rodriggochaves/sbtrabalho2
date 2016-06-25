@@ -49,12 +49,12 @@ dataNode GeradorElf::processDataNode( dataNode node ) {
     for (unsigned int i = 0; i < node.value.length(); ++i) {
       node.value[i] = this->convertToHex(node.value[i]);
     }
-    complement = 8 - node.value.length();
+    complement = (8 - node.value.length()) / 2;
     while(complement != 0) {
       complementString += '\x0';
       complement--;
     }
-    node.value = complementString + node.value;
+    node.value = node.value + complementString;
   }
 
   // std::cout << node.value << std::endl;
