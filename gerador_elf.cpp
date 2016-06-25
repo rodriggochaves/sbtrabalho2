@@ -94,14 +94,8 @@ dataNode GeradorElf::processDataLine(std::string line) {
       continue;
     }
   }
-
-  // std::cout << node.symbol << std::endl;
-  // std::cout << node.type << std::endl;
-  // std::cout << node.value << std::endl;
   
   node = this->processDataNode( node );
-
-  // std::cout << node.value << std::endl;  
 
   return node;
 }
@@ -184,7 +178,6 @@ void GeradorElf::readFile() {
     }
     if ( inSectionData && pause ) {
       node = this->processDataLine( line );
-      std::cout << node.value << std::endl;
       this->data += node.value;
     }
     if ( inSectionText && pause ) {
