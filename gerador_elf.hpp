@@ -34,6 +34,7 @@ class GeradorElf {
   long long int currentDataPosition;
   long long int currentTextPosition;
   std::string currentLabel;
+  labelNode entryPoint;
   public:
 	  GeradorElf(std::string);
     void processFile();

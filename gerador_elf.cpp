@@ -341,6 +341,7 @@ void GeradorElf::storeLabel( std::string line ) {
   this->labels.push_back( node );
 
   this->currentLabel = line;
+  std::cout << node.label << std::endl;
 }
 
 std::string GeradorElf::getLabel( std::string& line ) {
@@ -350,6 +351,9 @@ std::string GeradorElf::getLabel( std::string& line ) {
   if (found != -1) {
     label = line.substr(0,found);
     line = line.substr(found + 1, line.length());
+  }
+  if (line.substr(0, 6) == "global") {
+    line = line.substr(7, line.length());
   }
   return label;
 }
@@ -362,8 +366,13 @@ textNode GeradorElf::processTextLine(std::string line) {
   line = this->removeMultipleSpaces( line );
 
   label = this->getLabel( line );
-  if( !line.empty() ) node.instruction = this->getInstruction( line );
-  else if ( !label.empty() ) this->storeLabel( label );
+  if ( label == "global" ) {
+    label = line.substr(7, line.length());
+    this->entryPoint.label = label;
+    this->entryPoint.address = this->currentTextPosition;
+  }
+  if ( !line.empty() ) node.instruction = this->getInstruction( line );
+  else if ( (!label.empty()) && label != "global") this->storeLabel( label );
   if( !line.empty() ) node.op1 = this->getOp1( line );
   if( !line.empty() ) node.op2 = this->getOp2( line );
 
@@ -454,6 +463,7 @@ void GeradorElf::createFile() {
   for ( auto label : this->labels ) {
     std::string text = "";
     std::string textResult = "";
+    // std::cout << label.label << std::endl;
     for ( auto i : this->instructions ) {
       if ( i.valid && i.label == label.label) {
         std::stringstream stream;
@@ -482,6 +492,6 @@ void GeradorElf::createFile() {
       text_sec->get_addr_align() );    
   }
   
-  writer.set_entry( 0x08048080 );
+  writer.set_entry( this->entryPoint.address );
   writer.save( "output" ); 
 }
