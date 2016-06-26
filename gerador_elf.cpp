@@ -122,12 +122,46 @@ std::string GeradorElf::removeMultipleSpaces(std::string line) {
   return newline;
 }
 
-std::string GeradorElf::getLabel( std::string line ) {
+std::string GeradorElf::getOp2( std::string& line ) {
+  std::string op = "";
+  op = line.substr( 1, line.length() - 1 );
+  line = "";
+  return op;
+}
+
+std::string GeradorElf::getOp1( std::string& line ) {
+  std::string op = "";
+  int found = line.find( "," );
+  int endLine = line.find( "\n" );
+
+  if (found != -1) {
+    op = line.substr(0,found);
+    line = line.substr(found + 1, line.length());
+  } else if ( op.empty() ) {
+    op = line.substr( 0, endLine );
+    line = "";
+  }
+  return op;
+}
+
+std::string GeradorElf::getInstruction( std::string& line ) {
+  std::string instruction = "";
+  int found = line.find( " " );
+
+  if (found != -1) {
+    instruction = line.substr(0,found);
+    line = line.substr(found + 1, line.length());
+  }
+  return instruction;
+}
+
+std::string GeradorElf::getLabel( std::string& line ) {
   std::string label = "";
-  unsigned int found = line.find( ":" );
+  int found = line.find( ":" );
 
   if (found != -1) {
     label = line.substr(0,found);
+    line = line.substr(found + 1, line.length());
   }
   return label;
 }
@@ -141,28 +175,9 @@ textNode GeradorElf::tokenize(std::string line) {
   line = this->removeMultipleSpaces( line );
 
   label = this->getLabel( line );
-
-  for (unsigned int i = 0; i < line.length(); ++i) {
-    if ( line[i] == ' ' ) {
-      tokens.push_back(aux);
-      aux = "";
-    } else if ( line[i] == ',' && line[i + 1] == ' ' ) {
-      tokens.push_back(aux);
-      aux = "";
-      i = i + 1;
-    } else {
-      aux += line[i];
-    }
-  }
-  if (!aux.empty()) tokens.push_back(aux);
-  
-  if( !tokens[0].empty() ) node.instruction = tokens[0];
-  if( !tokens[1].empty() ) node.op1 = tokens[1];
-  if( !tokens[2].empty() ) node.op2 = tokens[2];
-
-  if( !tokens[0].empty() ) std::cout << node.instruction << std::endl;
-  if( !tokens[1].empty() ) std::cout << node.op1 << std::endl;
-  if( !tokens[2].empty() ) std::cout << node.op2 << std::endl;
+  if( !line.empty() ) node.instruction = this->getInstruction( line );
+  if( !line.empty() ) node.op1 = this->getOp1( line );
+  if( !line.empty() ) node.op2 = this->getOp2( line );
 
   return node;
 }
@@ -242,7 +257,7 @@ void GeradorElf::createFile() {
   text_seg->set_align( 0x1000 );
 
   text_seg->add_section_index( text_sec->get_index(),
-  text_sec->get_addr_align() );
+    text_sec->get_addr_align() );
   ELFIO::section* data_sec = writer.sections.add( ".data" );
   data_sec->set_type( SHT_PROGBITS );
   data_sec->set_flags( SHF_ALLOC | SHF_WRITE );
