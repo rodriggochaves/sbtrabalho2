@@ -20,5 +20,5 @@ int main(int argc, char const *argv[]) {
 
   // std::cout << data << std::endl;
 
-  geradorElf.createFile();
+  // geradorElf.createFile();
 }

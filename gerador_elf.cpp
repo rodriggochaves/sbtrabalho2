@@ -9,6 +9,7 @@
 GeradorElf::GeradorElf(std::string namefile) {
   this->file.open(namefile);
   if (!this->file.is_open()) {
+    std::cout << "Erro ao abrir o arquivo" << std::endl;
   }
 }
 
@@ -33,7 +34,7 @@ char GeradorElf::convertToHex(char c) {
   }
 }
 
-std::string GeradorElf::assembleMOV(std::vector<std::string> tokens) {
+std::string GeradorElf::assembleMOV(textNode node) {
   return "0";
 }
 
@@ -121,13 +122,25 @@ std::string GeradorElf::removeMultipleSpaces(std::string line) {
   return newline;
 }
 
-std::vector<std::string> GeradorElf::tokenize(std::string line) {
+std::string GeradorElf::getLabel( std::string line ) {
+  std::string label = "";
+  unsigned int found = line.find( ":" );
+
+  if (found != -1) {
+    label = line.substr(0,found);
+  }
+  return label;
+}
+
+textNode GeradorElf::tokenize(std::string line) {
+  textNode node;
   std::vector<std::string> tokens;
   std::string aux = "";
+  std::string label = "";
 
-  line = this->removeMultipleSpaces(line);
+  line = this->removeMultipleSpaces( line );
 
-  // std::cout << line << std::endl;
+  label = this->getLabel( line );
 
   for (unsigned int i = 0; i < line.length(); ++i) {
     if ( line[i] == ' ' ) {
@@ -142,15 +155,24 @@ std::vector<std::string> GeradorElf::tokenize(std::string line) {
     }
   }
   if (!aux.empty()) tokens.push_back(aux);
-  return tokens;
+  
+  if( !tokens[0].empty() ) node.instruction = tokens[0];
+  if( !tokens[1].empty() ) node.op1 = tokens[1];
+  if( !tokens[2].empty() ) node.op2 = tokens[2];
+
+  if( !tokens[0].empty() ) std::cout << node.instruction << std::endl;
+  if( !tokens[1].empty() ) std::cout << node.op1 << std::endl;
+  if( !tokens[2].empty() ) std::cout << node.op2 << std::endl;
+
+  return node;
 }
 
 std::string GeradorElf::processTextLine(std::string line) {
-  std::vector<std::string> tokens = this->tokenize(line);
+  textNode node = this->tokenize(line);
   std::string code = "";
   
-  if (tokens[0] == "global") return  "";
-  if (tokens[0] == "mov") code = this->assembleMOV(tokens);
+  if (node.instruction == "global") return  "";
+  if (node.instruction == "mov") code = this->assembleMOV(node);
 
   return "0";
 }
