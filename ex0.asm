@@ -6,3 +6,4 @@ b dw 8
 c db 4
 section .text
   mov eax, [a]
+  add eax, [b]

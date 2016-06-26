@@ -106,7 +106,20 @@ void GeradorElf::assemble(textNode& node) {
       memoryAccess = this->findSymbol( node.op2 );
       if (node.op1 == "eax") {
         int size = sizeof(memoryAccess.position);
-        node.code = (0xA1LL << size * 4) | this->reverseNumber(memoryAccess.position);
+        node.code = (0xA1LL << size * 4) | 
+          this->reverseNumber(memoryAccess.position);
+      }
+    }
+  }
+
+  if (this->undercase(node.instruction) == "add") {
+    node.op2 = this->filterMemory( node.op2 );
+    if (isRegister(node.op1) && !isRegister(node.op2)) {
+      memoryAccess = this->findSymbol( node.op2 );
+      if (node.op1 == "eax") {
+        int size = sizeof(memoryAccess.position);
+        node.code = (0x0305LL << size * 4) 
+          | this->reverseNumber(memoryAccess.position);
       }
     }
   }
@@ -310,16 +323,11 @@ void GeradorElf::readFile() {
 std::string GeradorElf::convertInstructions( std::string text ) {
   std::string newText = "";
 
-  // std::cout << text << std::endl;
-
   for (unsigned int i = 0; i < text.length(); i+=2) {
     std::string byte = text.substr(i,2);
-    // std::cout << byte << std::endl;
     char chr = (char) (int) strtol( byte.c_str(), NULL, 16 );
     newText.push_back(chr);
   }
-
-  std::cout << newText << std::endl;
 
   return newText;
 }
@@ -331,6 +339,8 @@ void GeradorElf::createFile() {
     std::stringstream stream;
     stream << std::hex << i.code;
     std::string result( stream.str() );
+    if (result.length() % 2 != 0) result.insert(0, "0");
+    std::cout << result << std::endl;
     text += result;
   };
 
