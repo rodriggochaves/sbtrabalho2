@@ -9,8 +9,8 @@
 GeradorElf::GeradorElf(std::string namefile) {
   this->file.open(namefile);
   if (!this->file.is_open()) {
-    std::cout << "Erro ao abrir o arquivo" << std::endl;
   }
+  this->currentDataPosition = 0x08048020;
 }
 
 char GeradorElf::convertToHex(char c) {
@@ -34,9 +34,24 @@ char GeradorElf::convertToHex(char c) {
   }
 }
 
+bool GeradorElf::isRegister ( std::string name ) {
+  if (name == "eax" || name == "ebx" || name == "ecx" || name == "edx" ||
+    name == "esp" || name == "ebp" || name == "ebi" || name == "esi") {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool GeradorElf::isMemory ( std::string name ) {
+  return (name.front() == '[' && name.back() == ']') ? true : false;
+}
+
 void GeradorElf::assemble(textNode node) {
   // if (std::tolower(node.instruction) == "mov") {
-     
+  //   if (isRegister(node.op1) && isMemory(node.op2)) {
+       
+  //   }
   // }
 }
 
@@ -58,6 +73,8 @@ dataNode GeradorElf::processDataNode( dataNode node ) {
       complement--;
     }
     node.value = node.value + complementString;
+    node.position = this->currentDataPosition;
+    currentDataPosition += 8 / 2;
   }
 
   if (node.type == "dw" && !this->isString(node) ) {
@@ -70,6 +87,8 @@ dataNode GeradorElf::processDataNode( dataNode node ) {
       complement--;
     }
     node.value = node.value + complementString;
+    node.position = this->currentDataPosition;
+    currentDataPosition += 4 / 2;
   }
 
   if (node.type == "db" && !this->isString(node) ) {
@@ -82,6 +101,8 @@ dataNode GeradorElf::processDataNode( dataNode node ) {
       complement--;
     }
     node.value = node.value + complementString;
+    node.position = this->currentDataPosition;
+    currentDataPosition += 2 / 2;
   }
 
   return node;
@@ -192,7 +213,7 @@ textNode GeradorElf::processTextLine(std::string line) {
   if( !line.empty() ) node.op1 = this->getOp1( line );
   if( !line.empty() ) node.op2 = this->getOp2( line );
 
-  // this->assemble( node );
+  this->assemble( node );
 
   return node;
 }
@@ -220,12 +241,10 @@ void GeradorElf::readFile() {
       pause = false;
     }
     if ( inSectionData && pause ) {
-      datanode = this->processDataLine( line );
-      this->data += datanode.value;
+      this->symbols.push_back(this->processDataLine( line ));
     }
     if ( inSectionText && pause ) {
-      textnode = this->processTextLine( line );
-      // this->text += textnode.value;
+      // this->instructions.push_back(this->processTextLine( line ));
     }
     pause = true;
   }
@@ -240,6 +259,9 @@ void GeradorElf::createFile() {
                   '\xCD', '\x80', // int 0x80
                   '\xB8', '\x01', '\x00', '\x00', '\x00', // mov eax, 1
                   '\xCD', '\x80' }; // int 0x80
+
+  std::string data = "";
+  for (auto dNode : this->symbols) data += dNode.value;
 
   ELFIO::elfio writer;
 
@@ -271,7 +293,7 @@ void GeradorElf::createFile() {
   data_sec->set_addr_align( 0x4 );
   
   // data_sec->set_data( data, sizeof( data ) );
-  data_sec->set_data( this->data );
+  data_sec->set_data( data );
   ELFIO::segment* data_seg = writer.segments.add();
   data_seg->set_type( PT_LOAD );
   data_seg->set_virtual_address( 0x08048020 );
