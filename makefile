@@ -9,22 +9,22 @@ all: clean main
 gerador_elf:
 	$(CC) $(LIBS) -c gerador_elf.cpp
 
-main: gerador_elf
-	$(CC) $(LIBS) -c main.cpp
-	$(CC) $(LIBS) -o main main.o gerador_elf.o
-	./main ex1.asm
+gerador: gerador_elf
+	$(CC) $(LIBS) -c gerador.cpp
+	$(CC) $(LIBS) -o gerador gerador.o gerador_elf.o
+	./gerador ex1.asm
 
 clean:
 	rm -f gerador_elf.o
-	rm -f main.o
-	rm -f main
+	rm -f gerador.o
+	rm -f gerador
 	rm -f output
 	rm -f ex0.o
 	rm -f ex0
 	rm -f ex1.o
 	rm -f ex1
 
-exec: main
+exec: gerador
 	chmod 755 output
 
 ex0:
