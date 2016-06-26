@@ -46,7 +46,9 @@ class GeradorElf {
     std::string undercase( std::string );
     std::string filterMemory( std::string op );
     dataNode findSymbol( std::string op );
+    int numberOfDigits( long long int number, int base );
     void assemble( textNode& node );
+    long long int hexParamater( std::string op );
     void createFile();
     std::string removeMultipleSpaces(std::string line);
     std::string convertInstructions(std::string result);

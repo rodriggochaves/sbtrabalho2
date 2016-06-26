@@ -108,6 +108,35 @@ long long int GeradorElf::getRegistersNumber ( std::string reg ) {
   return 0x0;
 }
 
+long long int GeradorElf::hexParamater( std::string op ) {
+  long long int number;
+  op = this->undercase( op );
+  unsigned int length = op.length();
+
+  if (op[length - 1] == 'h')  {
+    op.pop_back();
+    std::istringstream iss(op);
+    iss >> std::hex >> number;
+  }
+  if (op[0] == '0' && op[1] == 'x') {
+    std::string aux = op.substr(2, length);
+    std::istringstream iss(aux);
+    iss >> std::hex >> number; 
+  }
+  return number;
+}
+
+int GeradorElf::numberOfDigits( long long int number, int base ) {
+ int number_of_digits = 0;
+
+  do {
+       ++number_of_digits; 
+       number /= base;;
+  } while (number);
+
+  return number_of_digits;
+}
+
 void GeradorElf::assemble(textNode& node) {
   dataNode memoryAccess;
 
@@ -146,6 +175,13 @@ void GeradorElf::assemble(textNode& node) {
           | this->reverseNumber(memoryAccess.position);
       }
     }
+    node.valid = true;
+  }
+
+  if (this->undercase(node.instruction) == "int") {
+    long long int code = this->hexParamater( node.op1 );
+    int size = this->numberOfDigits(code, 16);
+    node.code = (0xCDLL << size * 4) | code;
     node.valid = true;
   }
 }
