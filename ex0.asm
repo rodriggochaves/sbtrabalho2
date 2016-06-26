@@ -1,5 +1,5 @@
-global _start
 section .text
+global _start
 _start:
   mov eax, [a]
   add eax, [b]

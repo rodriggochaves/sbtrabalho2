@@ -22,7 +22,7 @@ clean:
 	rm -f ex0.o
 	rm -f ex0
 
-exec:
+exec: main
 	chmod 755 output
 
 ex0:

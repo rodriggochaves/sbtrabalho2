@@ -433,8 +433,8 @@ void GeradorElf::createFile() {
   text_sec->set_data( textResult );
   ELFIO::segment* text_seg = writer.segments.add();
   text_seg->set_type( PT_LOAD );
-  text_seg->set_virtual_address( 0x08048000 );
-  text_seg->set_physical_address( 0x08048000 );
+  text_seg->set_virtual_address( 0x08048080 );
+  text_seg->set_physical_address( 0x08048080 );
   text_seg->set_flags( PF_X | PF_R );
   text_seg->set_align( 0x1000 );
 
@@ -456,6 +456,6 @@ void GeradorElf::createFile() {
   data_seg->add_section_index( data_sec->get_index(),
     data_sec->get_addr_align() );
   
-  writer.set_entry( 0x08048000 );
+  writer.set_entry( 0x08048080 );
   writer.save( "output" ); 
 }
