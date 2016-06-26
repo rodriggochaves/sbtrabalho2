@@ -15,6 +15,7 @@ struct textNode {
   std::string op1;
   std::string op2;
   int64_t code;
+  bool valid;
 };
 
 class GeradorElf {

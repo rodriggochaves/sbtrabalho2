@@ -67,14 +67,12 @@ std::string GeradorElf::filterMemory( std::string op ) {
 
 dataNode GeradorElf::findSymbol( std::string op ) {
   dataNode node;
-
   for (auto symbol : this->symbols) {
     if (op == symbol.symbol) {
       node = symbol;
       break;
     }
   }
-
   return node;
 }
 
@@ -99,6 +97,7 @@ void GeradorElf::assemble(textNode& node) {
   dataNode memoryAccess;
 
   node.code = 0x0;
+  node.valid = false;
 
   if (this->undercase(node.instruction) == "mov") {
     if (isRegister(node.op1) && isMemory(node.op2)) {
@@ -110,6 +109,7 @@ void GeradorElf::assemble(textNode& node) {
           this->reverseNumber(memoryAccess.position);
       }
     }
+    node.valid = true;
   }
 
   if (this->undercase(node.instruction) == "add") {
@@ -122,6 +122,7 @@ void GeradorElf::assemble(textNode& node) {
           | this->reverseNumber(memoryAccess.position);
       }
     }
+    node.valid = true;
   }
 }
 
@@ -182,8 +183,10 @@ dataNode GeradorElf::processDataLine(std::string line) {
   dataNode node;
   int counter = 0;
 
+  line = this->removeMultipleSpaces( line );
+
   for (unsigned int i = 0; i < line.length(); ++i) {
-    if(line[i] == ' ' && counter < 2) {
+    if(line[i] == ' ') {
       counter++;
       continue;
     }
@@ -202,7 +205,6 @@ dataNode GeradorElf::processDataLine(std::string line) {
   }
   
   node = this->processDataNode( node );
-
   return node;
 }
 
@@ -290,33 +292,38 @@ textNode GeradorElf::processTextLine(std::string line) {
 
 void GeradorElf::readFile() {
   std::string line;
-  bool inSectionData = false;
-  bool inSectionText = false;
-  bool pause = true;
+  bool allowRead = false;
   dataNode datanode;
   textNode textnode;
-  
-  while( getline(this->file, line) ) {
-    if ( line.empty() ) {
+
+  // vamos focar em achar a section data
+  while ( getline( this->file, line ) ) {
+    if ( line == "section .data" ) {
+      allowRead = true;
       continue;
     }
-    if ( line == "section .data" ) {
-      inSectionText = false;
-      inSectionData = true;
-      pause = false;
-    }
-    if (line == "section .text") {
-      inSectionText = true;
-      inSectionData = false; 
-      pause = false;
-    }
-    if ( inSectionData && pause ) {
+    if ( line.empty() ) allowRead = false;
+    if ( allowRead ) {
       this->symbols.push_back(this->processDataLine( line ));
     }
-    if ( inSectionText && pause ) {
-      this->instructions.push_back(this->processTextLine( line ));
+  }
+
+  // resetamos o ponteiro do arquivo para o inicio
+  this->file.clear();
+  this->file.seekg(0, this->file.beg);
+  
+  // agora podemos ler as instruções e ignorar a sessão data
+  while( getline(this->file, line) ) {
+    
+    if ( line == "section .data" ) allowRead = false;
+    if ( line.empty() ) allowRead = true;
+    if ( line == "section .text" ) {
+      allowRead = true;
+      continue;
     }
-    pause = true;
+    if ( allowRead )
+      std::cout << line << std::endl;
+      this->instructions.push_back(this->processTextLine( line ));
   }
 }
 
@@ -336,12 +343,13 @@ void GeradorElf::createFile() {
   std::string text = "";
   std::string textResult = "";
   for ( auto i : this->instructions ) {
-    std::stringstream stream;
-    stream << std::hex << i.code;
-    std::string result( stream.str() );
-    if (result.length() % 2 != 0) result.insert(0, "0");
-    std::cout << result << std::endl;
-    text += result;
+    if ( i.valid ) {
+      std::stringstream stream;
+      stream << std::hex << i.code;
+      std::string result( stream.str() );
+      if (result.length() % 2 != 0) result.insert(0, "0");
+      text += result;
+    }
   };
 
   textResult = this->convertInstructions( text );
