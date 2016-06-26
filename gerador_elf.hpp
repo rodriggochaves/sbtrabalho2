@@ -1,11 +1,12 @@
 #include <iostream>
 #include <fstream>
+#include <stdint.h>
 
 struct dataNode {
   std::string symbol;
   std::string type;
   std::string value;
-  int position;
+  int64_t position;
 };
 
 struct textNode {
@@ -13,6 +14,7 @@ struct textNode {
   std::string instruction;
   std::string op1;
   std::string op2;
+  int64_t code;
 };
 
 class GeradorElf {
@@ -21,7 +23,7 @@ class GeradorElf {
   std::string text;
   std::vector<dataNode> symbols;
   std::vector<textNode> instructions;
-  int currentDataPosition;
+  long long int currentDataPosition;
   public:
 	  GeradorElf(std::string);
     void processFile();
@@ -38,7 +40,12 @@ class GeradorElf {
     dataNode processDataNode( dataNode node );
     dataNode processDataLine( std::string line );
     textNode processTextLine( std::string line );
-    void assemble( textNode node );
+    std::string undercase( std::string );
+    std::string filterMemory( std::string op );
+    dataNode findSymbol( std::string op );
+    void assemble( textNode& node );
     void createFile();
     std::string removeMultipleSpaces(std::string line);
+    std::string convertInstructions(std::string result);
+    long long int reverseNumber ( long long int number );
 };

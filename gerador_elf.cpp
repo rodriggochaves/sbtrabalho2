@@ -5,12 +5,14 @@
 #include <sstream>
 #include <string>
 #include <algorithm>
+#include <stdint.h>
+#include <iomanip>
 
 GeradorElf::GeradorElf(std::string namefile) {
   this->file.open(namefile);
   if (!this->file.is_open()) {
   }
-  this->currentDataPosition = 0x08048020;
+  this->currentDataPosition = 0x08049098;
 }
 
 char GeradorElf::convertToHex(char c) {
@@ -34,6 +36,11 @@ char GeradorElf::convertToHex(char c) {
   }
 }
 
+std::string GeradorElf::undercase( std::string data ) {
+  std::transform(data.begin(), data.end(), data.begin(), ::tolower);
+  return data;
+}
+
 bool GeradorElf::isRegister ( std::string name ) {
   if (name == "eax" || name == "ebx" || name == "ecx" || name == "edx" ||
     name == "esp" || name == "ebp" || name == "ebi" || name == "esi") {
@@ -47,12 +54,62 @@ bool GeradorElf::isMemory ( std::string name ) {
   return (name.front() == '[' && name.back() == ']') ? true : false;
 }
 
-void GeradorElf::assemble(textNode node) {
-  // if (std::tolower(node.instruction) == "mov") {
-  //   if (isRegister(node.op1) && isMemory(node.op2)) {
-       
-  //   }
-  // }
+std::string GeradorElf::filterMemory( std::string op ) {
+  std::string newOp = "";
+
+  for (unsigned int i = 0; i < op.length(); ++i) {
+    if (op[i] != '[' && op[i] != ']' && op[i] != ' ') {
+      newOp += op[i];
+    }
+  }
+  return newOp;
+}
+
+dataNode GeradorElf::findSymbol( std::string op ) {
+  dataNode node;
+
+  for (auto symbol : this->symbols) {
+    if (op == symbol.symbol) {
+      node = symbol;
+      break;
+    }
+  }
+
+  return node;
+}
+
+long long int GeradorElf::reverseNumber ( long long int number ) {
+  long long int reverse = 0;
+  long long int aux = 0;
+  int i = sizeof(number) / 2;
+
+  while(i != 0) {
+    aux = number % 0x100LL;
+    reverse = (reverse) | aux;
+    reverse = reverse << 2 * 4;
+    number /= 0x100LL;
+    i--;
+  }
+  reverse = reverse >> 2 * 4;
+
+  return reverse;
+}
+
+void GeradorElf::assemble(textNode& node) {
+  dataNode memoryAccess;
+
+  node.code = 0x0;
+
+  if (this->undercase(node.instruction) == "mov") {
+    if (isRegister(node.op1) && isMemory(node.op2)) {
+      node.op2 = this->filterMemory( node.op2 );
+      memoryAccess = this->findSymbol( node.op2 );
+      if (node.op1 == "eax") {
+        int size = sizeof(memoryAccess.position);
+        node.code = (0xA1LL << size * 4) | this->reverseNumber(memoryAccess.position);
+      }
+    }
+  }
 }
 
 bool GeradorElf::isString( dataNode node ) {
@@ -244,21 +301,40 @@ void GeradorElf::readFile() {
       this->symbols.push_back(this->processDataLine( line ));
     }
     if ( inSectionText && pause ) {
-      // this->instructions.push_back(this->processTextLine( line ));
+      this->instructions.push_back(this->processTextLine( line ));
     }
     pause = true;
   }
 }
 
+std::string GeradorElf::convertInstructions( std::string text ) {
+  std::string newText = "";
+
+  // std::cout << text << std::endl;
+
+  for (unsigned int i = 0; i < text.length(); i+=2) {
+    std::string byte = text.substr(i,2);
+    // std::cout << byte << std::endl;
+    char chr = (char) (int) strtol( byte.c_str(), NULL, 16 );
+    newText.push_back(chr);
+  }
+
+  std::cout << newText << std::endl;
+
+  return newText;
+}
+
 void GeradorElf::createFile() {
-  std::string text = { '\xB8', '\x04', '\x00', '\x00', 
-                  '\x00', // mov eax, 4
-                  '\xBB', '\x01', '\x00', '\x00', '\x00', // mov ebx, 1
-                  '\xB9', '\x20', '\x80', '\x04', '\x08', // mov ecx, msg
-                  '\xBA', '\x0E', '\x00', '\x00', '\x00', // mov edx, 14
-                  '\xCD', '\x80', // int 0x80
-                  '\xB8', '\x01', '\x00', '\x00', '\x00', // mov eax, 1
-                  '\xCD', '\x80' }; // int 0x80
+  std::string text = "";
+  std::string textResult = "";
+  for ( auto i : this->instructions ) {
+    std::stringstream stream;
+    stream << std::hex << i.code;
+    std::string result( stream.str() );
+    text += result;
+  };
+
+  textResult = this->convertInstructions( text );
 
   std::string data = "";
   for (auto dNode : this->symbols) data += dNode.value;
@@ -277,7 +353,7 @@ void GeradorElf::createFile() {
   text_sec->set_addr_align( 0x10 );
 
   // text_sec->set_data( text, sizeof( text ) );
-  text_sec->set_data( text );
+  text_sec->set_data( textResult );
   ELFIO::segment* text_seg = writer.segments.add();
   text_seg->set_type( PT_LOAD );
   text_seg->set_virtual_address( 0x08048000 );
@@ -296,8 +372,8 @@ void GeradorElf::createFile() {
   data_sec->set_data( data );
   ELFIO::segment* data_seg = writer.segments.add();
   data_seg->set_type( PT_LOAD );
-  data_seg->set_virtual_address( 0x08048020 );
-  data_seg->set_physical_address( 0x08048020 );
+  data_seg->set_virtual_address( 0x08049098 );
+  data_seg->set_physical_address( 0x08049098 );
   data_seg->set_flags( PF_W | PF_R );
   data_seg->set_align( 0x10 );
   data_seg->add_section_index( data_sec->get_index(),
