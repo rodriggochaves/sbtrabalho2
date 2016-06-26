@@ -186,6 +186,16 @@ void GeradorElf::assemble(textNode& node) {
     node.valid = true;
   }
 
+  if (this->undercase(node.instruction) == "push") {
+    memoryAccess = this->findSymbol( node.op1 );
+    // std::cout << std::hex << memoryAccess.position << std::endl;
+    int size = sizeof(memoryAccess.position);
+    node.code = (0x68LL << size * 4) | 
+      this->reverseNumber(memoryAccess.position);
+    node.valid = true;
+    std::cout << std::hex << node.code << std::endl;
+  }
+
   if ( node.valid ) {
     int count = this->numberOfDigits(node.code, 16) / 2;
     if (this->numberOfDigits(node.code, 16) % 2 != 0) count++;
@@ -341,7 +351,6 @@ void GeradorElf::storeLabel( std::string line ) {
   this->labels.push_back( node );
 
   this->currentLabel = line;
-  std::cout << node.label << std::endl;
 }
 
 std::string GeradorElf::getLabel( std::string& line ) {
@@ -463,7 +472,6 @@ void GeradorElf::createFile() {
   for ( auto label : this->labels ) {
     std::string text = "";
     std::string textResult = "";
-    // std::cout << label.label << std::endl;
     for ( auto i : this->instructions ) {
       if ( i.valid && i.label == label.label) {
         std::stringstream stream;
