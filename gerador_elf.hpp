@@ -2,10 +2,16 @@
 #include <fstream>
 #include <stdint.h>
 
+struct labelNode {
+  std::string label;
+  long long int address;
+};
+
 struct dataNode {
   std::string symbol;
   std::string type;
   std::string value;
+  std::string times;
   int64_t position;
 };
 
@@ -24,7 +30,10 @@ class GeradorElf {
   std::string text;
   std::vector<dataNode> symbols;
   std::vector<textNode> instructions;
+  std::vector<labelNode> labels;
   long long int currentDataPosition;
+  long long int currentTextPosition;
+  std::string currentLabel;
   public:
 	  GeradorElf(std::string);
     void processFile();
@@ -38,6 +47,8 @@ class GeradorElf {
     std::string getInstruction( std::string& line );
     std::string getOp1( std::string& line );
     std::string getOp2( std::string& line );
+    std::string getToken( std::string& line );
+    void storeLabel( std::string line );
     long long int getRegistersNumber ( std::string reg );
     textNode tokenize(std::string line);
     dataNode processDataNode( dataNode node );

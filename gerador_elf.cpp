@@ -13,6 +13,7 @@ GeradorElf::GeradorElf(std::string namefile) {
   if (!this->file.is_open()) {
   }
   this->currentDataPosition = 0x08049098;
+  this->currentTextPosition = 0x08048080;
 }
 
 char GeradorElf::convertToHex(char c) {
@@ -184,6 +185,13 @@ void GeradorElf::assemble(textNode& node) {
     node.code = (0xCDLL << size * 4) | code;
     node.valid = true;
   }
+
+  if ( node.valid ) {
+    int count = this->numberOfDigits(node.code, 16) / 2;
+    if (this->numberOfDigits(node.code, 16) % 2 != 0) count++;
+    this->currentTextPosition += count;
+    node.label = this->currentLabel;
+  }
 }
 
 bool GeradorElf::isString( dataNode node ) {
@@ -193,6 +201,7 @@ bool GeradorElf::isString( dataNode node ) {
 dataNode GeradorElf::processDataNode( dataNode node ) {
   std::string complementString = "";
   int complement = 0;
+  int times = std::stoi(node.times);
 
   if (node.type == "dd" && !this->isString(node) ) {
     for (unsigned int i = 0; i < node.value.length(); ++i) {
@@ -204,8 +213,8 @@ dataNode GeradorElf::processDataNode( dataNode node ) {
       complement--;
     }
     node.value = node.value + complementString;
-    node.position = this->currentDataPosition;
-    currentDataPosition += 8 / 2;
+    node.position = this->currentDataPosition * times;
+    currentDataPosition += times * 8 / 2;
   }
 
   if (node.type == "dw" && !this->isString(node) ) {
@@ -218,8 +227,8 @@ dataNode GeradorElf::processDataNode( dataNode node ) {
       complement--;
     }
     node.value = node.value + complementString;
-    node.position = this->currentDataPosition;
-    currentDataPosition += 4 / 2;
+    node.position = this->currentDataPosition * times;
+    currentDataPosition += times * 4 / 2;
   }
 
   if (node.type == "db" && !this->isString(node) ) {
@@ -232,38 +241,39 @@ dataNode GeradorElf::processDataNode( dataNode node ) {
       complement--;
     }
     node.value = node.value + complementString;
-    node.position = this->currentDataPosition;
-    currentDataPosition += 2 / 2;
+    node.position = this->currentDataPosition * times;
+    currentDataPosition += times * 2 / 2;
   }
 
   return node;
 }
 
+std::string GeradorElf::getToken( std::string& line ) {
+  std::string token;
+  int found = line.find(" ");
+  int length = line.length();
+  token = line.substr(0, found);
+  line = line.substr(found + 1, length - 1);
+
+  return token;
+}
+
 dataNode GeradorElf::processDataLine(std::string line) {
   dataNode node;
-  int counter = 0;
 
   line = this->removeMultipleSpaces( line );
 
-  for (unsigned int i = 0; i < line.length(); ++i) {
-    if(line[i] == ' ') {
-      counter++;
-      continue;
-    }
-    if (counter == 0) {
-      node.symbol += line[i];
-      continue;
-    }
-    if (counter == 1) {
-      node.type += line[i];
-      continue;
-    }
-    if (counter >= 2) {
-      node.value += line[i];
-      continue;
-    }
+  node.symbol = this->getToken( line );
+  if( !line.empty() ) node.type = this->getToken( line );
+  if( !line.empty() ) node.value = this->getToken( line );
+  if( !line.empty() && node.type == "times") {
+    node.times = node.value;
+    node.type = this->getToken( line );
+    node.value = this->getToken( line );
+  } else {
+    node.times = "1";
   }
-  
+
   node = this->processDataNode( node );
   return node;
 }
@@ -322,6 +332,17 @@ std::string GeradorElf::getInstruction( std::string& line ) {
   return instruction;
 }
 
+void GeradorElf::storeLabel( std::string line ) {
+  labelNode node;
+
+  node.label = line;
+  node.address = this->currentTextPosition;
+
+  this->labels.push_back( node );
+
+  this->currentLabel = line;
+}
+
 std::string GeradorElf::getLabel( std::string& line ) {
   std::string label = "";
   int found = line.find( ":" );
@@ -342,6 +363,7 @@ textNode GeradorElf::processTextLine(std::string line) {
 
   label = this->getLabel( line );
   if( !line.empty() ) node.instruction = this->getInstruction( line );
+  else if ( !label.empty() ) this->storeLabel( label );
   if( !line.empty() ) node.op1 = this->getOp1( line );
   if( !line.empty() ) node.op2 = this->getOp2( line );
 
@@ -399,22 +421,11 @@ std::string GeradorElf::convertInstructions( std::string text ) {
 }
 
 void GeradorElf::createFile() {
-  std::string text = "";
-  std::string textResult = "";
-  for ( auto i : this->instructions ) {
-    if ( i.valid ) {
-      std::stringstream stream;
-      stream << std::hex << i.code;
-      std::string result( stream.str() );
-      if (result.length() % 2 != 0) result.insert(0, "0");
-      text += result;
-    }
-  };
-
-  textResult = this->convertInstructions( text );
-
   std::string data = "";
-  for (auto dNode : this->symbols) data += dNode.value;
+  for (auto dNode : this->symbols) {
+    int times = std::stoi( dNode.times );
+    for (int i = 0; i < times; i++ ) data += dNode.value;
+  };
 
   ELFIO::elfio writer;
 
@@ -424,22 +435,54 @@ void GeradorElf::createFile() {
   writer.set_type( ET_EXEC );
   writer.set_machine( EM_386 );
 
-  ELFIO::section* text_sec = writer.sections.add(".text");
-  text_sec->set_type(SHT_PROGBITS);
-  text_sec->set_flags( SHF_ALLOC | SHF_EXECINSTR );
-  text_sec->set_addr_align( 0x10 );
+  for ( auto label : this->labels ) {
+    std::string text = "";
+    std::string textResult = "";
+    for ( auto i : this->instructions ) {
+      if ( i.valid && i.label == label.label) {
+        std::stringstream stream;
+        stream << std::hex << i.code;
+        std::string result( stream.str() );
+        if (result.length() % 2 != 0) result.insert(0, "0");
+        text += result;
+      }
+    };
+    textResult = this->convertInstructions( text );
+    
+    ELFIO::section* text_sec = writer.sections.add(label.label);
+    text_sec->set_type(SHT_PROGBITS);
+    text_sec->set_flags( SHF_ALLOC | SHF_EXECINSTR );
+    text_sec->set_addr_align( 0x10 );
 
-  // text_sec->set_data( text, sizeof( text ) );
-  text_sec->set_data( textResult );
-  ELFIO::segment* text_seg = writer.segments.add();
-  text_seg->set_type( PT_LOAD );
-  text_seg->set_virtual_address( 0x08048080 );
-  text_seg->set_physical_address( 0x08048080 );
-  text_seg->set_flags( PF_X | PF_R );
-  text_seg->set_align( 0x1000 );
+    // text_sec->set_data( text, sizeof( text ) );
+    text_sec->set_data( textResult );
+    ELFIO::segment* text_seg = writer.segments.add();
+    text_seg->set_type( PT_LOAD );
+    text_seg->set_virtual_address( label.address );
+    text_seg->set_physical_address( label.address );
+    text_seg->set_flags( PF_X | PF_R );
+    text_seg->set_align( 0x1000 );
+    text_seg->add_section_index( text_sec->get_index(),
+      text_sec->get_addr_align() );    
+  }  
 
-  text_seg->add_section_index( text_sec->get_index(),
-    text_sec->get_addr_align() );
+  // ELFIO::section* text_sec = writer.sections.add("_text");
+  // text_sec->set_type(SHT_PROGBITS);
+  // text_sec->set_flags( SHF_ALLOC | SHF_EXECINSTR );
+  // text_sec->set_addr_align( 0x10 );
+
+  // // text_sec->set_data( text, sizeof( text ) );
+  // text_sec->set_data( textResult );
+  // ELFIO::segment* text_seg = writer.segments.add();
+  // text_seg->set_type( PT_LOAD );
+  // text_seg->set_virtual_address( 0x08048080 );
+  // text_seg->set_physical_address( 0x08048080 );
+  // text_seg->set_flags( PF_X | PF_R );
+  // text_seg->set_align( 0x1000 );
+  // text_seg->add_section_index( text_sec->get_index(),
+  //   text_sec->get_addr_align() );
+
+
   ELFIO::section* data_sec = writer.sections.add( ".data" );
   data_sec->set_type( SHT_PROGBITS );
   data_sec->set_flags( SHF_ALLOC | SHF_WRITE );
