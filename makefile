@@ -12,7 +12,7 @@ gerador_elf:
 main: gerador_elf
 	$(CC) $(LIBS) -c main.cpp
 	$(CC) $(LIBS) -o main main.o gerador_elf.o
-	./main ex0.asm
+	./main ex1.asm
 
 clean:
 	rm -f gerador_elf.o
