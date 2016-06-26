@@ -166,9 +166,8 @@ std::string GeradorElf::getLabel( std::string& line ) {
   return label;
 }
 
-textNode GeradorElf::tokenize(std::string line) {
+textNode GeradorElf::processTextLine(std::string line) {
   textNode node;
-  std::vector<std::string> tokens;
   std::string aux = "";
   std::string label = "";
 
@@ -182,22 +181,13 @@ textNode GeradorElf::tokenize(std::string line) {
   return node;
 }
 
-std::string GeradorElf::processTextLine(std::string line) {
-  textNode node = this->tokenize(line);
-  std::string code = "";
-  
-  if (node.instruction == "global") return  "";
-  if (node.instruction == "mov") code = this->assembleMOV(node);
-
-  return "0";
-}
-
 void GeradorElf::readFile() {
   std::string line;
   bool inSectionData = false;
   bool inSectionText = false;
   bool pause = true;
-  dataNode node;
+  dataNode datanode;
+  textNode textnode;
   
   while( getline(this->file, line) ) {
     if ( line.empty() ) {
@@ -214,11 +204,12 @@ void GeradorElf::readFile() {
       pause = false;
     }
     if ( inSectionData && pause ) {
-      node = this->processDataLine( line );
-      this->data += node.value;
+      datanode = this->processDataLine( line );
+      this->data += datanode.value;
     }
     if ( inSectionText && pause ) {
-      this->text += this->processTextLine( line );
+      textnode = this->processTextLine( line );
+      // this->text += textnode.value;
     }
     pause = true;
   }
