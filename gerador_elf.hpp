@@ -20,6 +20,7 @@ struct textNode {
   std::string instruction;
   std::string op1;
   std::string op2;
+  std::string jump;
   int64_t code;
   bool valid;
 };
@@ -49,7 +50,7 @@ class GeradorElf {
     std::string getOp1( std::string& line );
     std::string getOp2( std::string& line );
     std::string getToken( std::string& line );
-    void storeLabel( std::string line );
+    void storeLabel( std::string line, long long int address );
     long long int getRegistersNumber ( std::string reg );
     textNode tokenize(std::string line);
     dataNode processDataNode( dataNode node );
@@ -58,6 +59,7 @@ class GeradorElf {
     std::string undercase( std::string );
     std::string filterMemory( std::string op );
     dataNode findSymbol( std::string op );
+    labelNode findLabel( std::string op );
     int numberOfDigits( long long int number, int base );
     void assemble( textNode& node );
     long long int hexParamater( std::string op );

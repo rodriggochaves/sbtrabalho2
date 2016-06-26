@@ -138,6 +138,24 @@ int GeradorElf::numberOfDigits( long long int number, int base ) {
   return number_of_digits;
 }
 
+labelNode GeradorElf::findLabel( std::string op ) {
+  labelNode n;
+  bool founded = false;
+
+  for ( auto node : this->labels ) {
+    if ( node.label == op ) {
+      n = node;
+      founded = true;
+    }
+  }
+  if ( !founded ) {
+    this->storeLabel( op , -1LL );
+    n.address = -1;
+    n.label = op;
+  }
+  return n;
+}
+
 void GeradorElf::assemble(textNode& node) {
   dataNode memoryAccess;
 
@@ -187,14 +205,35 @@ void GeradorElf::assemble(textNode& node) {
   }
 
   if (this->undercase(node.instruction) == "push") {
-    memoryAccess = this->findSymbol( node.op1 );
-    // std::cout << std::hex << memoryAccess.position << std::endl;
-    int size = sizeof(memoryAccess.position);
-    node.code = (0x68LL << size * 4) | 
-      this->reverseNumber(memoryAccess.position);
-    node.valid = true;
-    std::cout << std::hex << node.code << std::endl;
+    if ( !this->isRegister(node.op1) ) {
+      memoryAccess = this->findSymbol( node.op1 );
+      int size = sizeof(memoryAccess.position);
+      node.code = (0x68LL << size * 4) | 
+        this->reverseNumber(memoryAccess.position);
+      node.valid = true;
+    }
   }
+
+  // std::cout << this->currentLabel << std::endl;
+
+  if (this->undercase(node.instruction) == "call") {
+    if ( !this->isRegister(node.op1) && !this->isMemory(node.op1)) {
+      labelNode label = this->findLabel( node.op1 );
+      if (label.address == -1) {
+        int size = sizeof(label.address);
+        // std::cout << size << std::endl;
+        node.label = this->currentLabel;
+        // std::cout << node.label << std::endl;
+        node.code = (0x68LL << size * 4);
+        node.valid = false; 
+        node.jump = label.label;
+        // avanca pc
+        int count = this->numberOfDigits(node.code, 16) / 2;
+        if (this->numberOfDigits(node.code, 16) % 2 != 0) count++;
+        this->currentTextPosition += count;
+      }
+    }
+  }  
 
   if ( node.valid ) {
     int count = this->numberOfDigits(node.code, 16) / 2;
@@ -342,15 +381,23 @@ std::string GeradorElf::getInstruction( std::string& line ) {
   return instruction;
 }
 
-void GeradorElf::storeLabel( std::string line ) {
+void GeradorElf::storeLabel( std::string line, long long int address ) {
   labelNode node;
 
   node.label = line;
-  node.address = this->currentTextPosition;
+  node.address = address;
 
-  this->labels.push_back( node );
-
-  this->currentLabel = line;
+  for (auto n : this->labels) {
+    if ( n.label == node.label ) {
+      if ( n.address == -1 ) { 
+        n.address = address;
+      }
+    }
+  }
+  if (address != -1LL) {
+    this->labels.push_back( node );
+    this->currentLabel = line;
+  }
 }
 
 std::string GeradorElf::getLabel( std::string& line ) {
@@ -375,13 +422,19 @@ textNode GeradorElf::processTextLine(std::string line) {
   line = this->removeMultipleSpaces( line );
 
   label = this->getLabel( line );
+  line = this->removeMultipleSpaces(line);
   if ( label == "global" ) {
     label = line.substr(7, line.length());
     this->entryPoint.label = label;
     this->entryPoint.address = this->currentTextPosition;
   }
-  if ( !line.empty() ) node.instruction = this->getInstruction( line );
-  else if ( (!label.empty()) && label != "global") this->storeLabel( label );
+  if ( !line.empty() ) {
+    node.instruction = this->getInstruction( line );
+  }
+  // labels comums
+  else if ( (!label.empty()) && label != "global") {
+    this->storeLabel( label, this->currentTextPosition );
+  }
   if( !line.empty() ) node.op1 = this->getOp1( line );
   if( !line.empty() ) node.op2 = this->getOp2( line );
 
@@ -414,14 +467,18 @@ void GeradorElf::readFile() {
   
   // agora podemos ler as instruções e ignorar a sessão data
   while( getline(this->file, line) ) {
-    
+    line = this->removeMultipleSpaces( line );
     if ( line == "section .data" ) allowRead = false;
-    if ( line.empty() ) allowRead = true;
+    if ( line.empty() ) {
+      allowRead = true;
+      continue;
+    }
     if ( line == "section .text" ) {
       allowRead = true;
       continue;
     }
     if ( allowRead )
+      // std::cout << line << std::endl;
       this->instructions.push_back(this->processTextLine( line ));
   }
 }
@@ -439,6 +496,16 @@ std::string GeradorElf::convertInstructions( std::string text ) {
 }
 
 void GeradorElf::createFile() {
+  for (auto l : this->labels) {
+    for ( auto i : this->instructions ) {
+      if ( !i.valid && !i.jump.empty() ) {
+        labelNode ln = this->findLabel(i.jump);
+        i.code = i.code | ln.address;
+        i.valid = true;
+      }
+    }
+  }
+
   std::string data = "";
   for (auto dNode : this->symbols) {
     int times = std::stoi( dNode.times );
@@ -473,12 +540,17 @@ void GeradorElf::createFile() {
     std::string text = "";
     std::string textResult = "";
     for ( auto i : this->instructions ) {
+      // std::cout << "----------" << std::endl;
+      // std::cout << i.instruction << std::endl;
+      // std::cout << i.label << std::endl;
+      // std::cout << label.label << std::endl;
       if ( i.valid && i.label == label.label) {
         std::stringstream stream;
         stream << std::hex << i.code;
         std::string result( stream.str() );
         if (result.length() % 2 != 0) result.insert(0, "0");
         text += result;
+        std::cout << i.instruction << std::endl;
       }
     };
     textResult = this->convertInstructions( text );
