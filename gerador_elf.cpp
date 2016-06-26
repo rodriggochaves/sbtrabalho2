@@ -54,6 +54,10 @@ bool GeradorElf::isMemory ( std::string name ) {
   return (name.front() == '[' && name.back() == ']') ? true : false;
 }
 
+bool GeradorElf::isImmediate ( std::string name ) {
+  return (!this->isRegister(name) && !this->isMemory(name)) ? true : false;
+}
+
 std::string GeradorElf::filterMemory( std::string op ) {
   std::string newOp = "";
 
@@ -93,6 +97,17 @@ long long int GeradorElf::reverseNumber ( long long int number ) {
   return reverse;
 }
 
+long long int GeradorElf::getRegistersNumber ( std::string reg ) {
+  reg = this->undercase(reg);
+  if( reg =="eax" ) return 0x0;
+  if( reg =="ecx" ) return 0x1;
+  if( reg =="edx" ) return 0x2;
+  if( reg =="ebx" ) return 0x3;
+  if( reg =="esi" ) return 0x6;
+  if( reg =="edi" ) return 0x7;
+  return 0x0;
+}
+
 void GeradorElf::assemble(textNode& node) {
   dataNode memoryAccess;
 
@@ -108,14 +123,23 @@ void GeradorElf::assemble(textNode& node) {
         node.code = (0xA1LL << size * 4) | 
           this->reverseNumber(memoryAccess.position);
       }
+    } else if (isRegister(node.op1) && isImmediate(node.op2)) {
+      long long int immediate = 0x0;
+      node.code = 0xB8LL + this->getRegistersNumber(node.op1);
+      std::istringstream iss(node.op2);
+      iss >> std::hex >> immediate;
+      int size = sizeof(immediate);
+      node.code = (node.code << size * 4) | this->reverseNumber(immediate);
     }
     node.valid = true;
   }
 
   if (this->undercase(node.instruction) == "add") {
-    node.op2 = this->filterMemory( node.op2 );
-    if (isRegister(node.op1) && !isRegister(node.op2)) {
-      memoryAccess = this->findSymbol( node.op2 );
+    if (isRegister(node.op1) && isMemory(node.op2)) {
+      node.op2 = this->filterMemory( node.op2 );
+      if (!this->isRegister(node.op2)) 
+        memoryAccess = this->findSymbol( node.op2 );;
+      // TODO else caso tenhamos um registrador com ponteiro para a memoria
       if (node.op1 == "eax") {
         int size = sizeof(memoryAccess.position);
         node.code = (0x0305LL << size * 4) 
@@ -322,7 +346,6 @@ void GeradorElf::readFile() {
       continue;
     }
     if ( allowRead )
-      std::cout << line << std::endl;
       this->instructions.push_back(this->processTextLine( line ));
   }
 }

@@ -33,10 +33,12 @@ class GeradorElf {
     bool isString ( dataNode node );
     bool isRegister ( std::string name );
     bool isMemory ( std::string name );
+    bool isImmediate ( std::string name );
     std::string getLabel( std::string& line );
     std::string getInstruction( std::string& line );
     std::string getOp1( std::string& line );
     std::string getOp2( std::string& line );
+    long long int getRegistersNumber ( std::string reg );
     textNode tokenize(std::string line);
     dataNode processDataNode( dataNode node );
     dataNode processDataLine( std::string line );
