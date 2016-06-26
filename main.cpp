@@ -18,5 +18,5 @@ int main(int argc, char const *argv[]) {
   // '\x6F','\x2C', '\x20', '\x57', '\x6F', '\x72', // “Hello, World!\n”
   // '\x6C', '\x64', '\x21', '\x0A' };
 
-  // geradorElf.createFile();
+  geradorElf.createFile();
 }

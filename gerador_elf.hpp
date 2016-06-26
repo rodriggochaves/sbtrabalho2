@@ -33,7 +33,7 @@ class GeradorElf {
     dataNode processDataNode( dataNode node );
     dataNode processDataLine( std::string line );
     textNode processTextLine( std::string line );
-    std::string assembleMOV(textNode node);
+    void assemble( textNode node );
     void createFile();
     std::string removeMultipleSpaces(std::string line);
 };

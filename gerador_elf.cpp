@@ -34,8 +34,10 @@ char GeradorElf::convertToHex(char c) {
   }
 }
 
-std::string GeradorElf::assembleMOV(textNode node) {
-  return "0";
+void GeradorElf::assemble(textNode node) {
+  // if (std::tolower(node.instruction) == "mov") {
+     
+  // }
 }
 
 bool GeradorElf::isString( dataNode node ) {
@@ -45,6 +47,18 @@ bool GeradorElf::isString( dataNode node ) {
 dataNode GeradorElf::processDataNode( dataNode node ) {
   std::string complementString = "";
   int complement = 0;
+
+  if (node.type == "dd" && !this->isString(node) ) {
+    for (unsigned int i = 0; i < node.value.length(); ++i) {
+      node.value[i] = this->convertToHex(node.value[i]);
+    }
+    complement = (8 - node.value.length()) / 2;
+    while(complement != 0) {
+      complementString += '\x0';
+      complement--;
+    }
+    node.value = node.value + complementString;
+  }
 
   if (node.type == "dw" && !this->isString(node) ) {
     for (unsigned int i = 0; i < node.value.length(); ++i) {
@@ -177,6 +191,8 @@ textNode GeradorElf::processTextLine(std::string line) {
   if( !line.empty() ) node.instruction = this->getInstruction( line );
   if( !line.empty() ) node.op1 = this->getOp1( line );
   if( !line.empty() ) node.op2 = this->getOp2( line );
+
+  // this->assemble( node );
 
   return node;
 }

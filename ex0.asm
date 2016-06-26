@@ -1,7 +1,7 @@
 global _start
 
 section .data
-a dw 6
+a dd 6
 b dw 8
 c db 4
 section .text
