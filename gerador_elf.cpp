@@ -256,6 +256,19 @@ void GeradorElf::assemble(textNode& node) {
     }
   }
 
+  if (this->undercase(node.instruction) == "div") {
+    if ( this->isMemory(node.op2) ) {
+      node.op2 = this->filterMemory(node.op2);
+      if ( !this->isRegister( node.op2 ) ) {
+        memoryAccess = this->findSymbol( node.op2 );
+        int size = sizeof(memoryAccess.position);
+        node.code = (0xF735LL << size * 4) | 
+          this->reverseNumber(memoryAccess.position);
+        node.valid = true;
+      }
+    }
+  }
+
   if ( node.valid ) {
     long long int count = this->numberOfDigits(node.code, 16) / 2;
     if (this->numberOfDigits(node.code, 16) % 2 != 0) count += 0x1;
