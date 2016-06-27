@@ -56,7 +56,8 @@ bool GeradorElf::isMemory ( std::string name ) {
 }
 
 bool GeradorElf::isImmediate ( std::string name ) {
-  return (!this->isRegister(name) && !this->isMemory(name)) ? true : false;
+  return (!this->isRegister(this->filterMemory(name)) 
+    && !this->isMemory(name)) ? true : false;
 }
 
 std::string GeradorElf::filterMemory( std::string op ) {
@@ -165,11 +166,13 @@ void GeradorElf::assemble(textNode& node) {
   if (this->undercase(node.instruction) == "mov") {
     if (isRegister(node.op1) && isMemory(node.op2)) {
       node.op2 = this->filterMemory( node.op2 );
-      memoryAccess = this->findSymbol( node.op2 );
-      if (node.op1 == "eax") {
-        int size = sizeof(memoryAccess.position);
-        node.code = (0xA1LL << size * 4) | 
-          this->reverseNumber(memoryAccess.position);
+      if (!isRegister(node.op2)) {
+        memoryAccess = this->findSymbol( node.op2 );
+        if (node.op1 == "eax") {
+          int size = sizeof(memoryAccess.position);
+          node.code = (0xA1LL << size * 4) | 
+            this->reverseNumber(memoryAccess.position);
+        }
       }
     } else if (isRegister(node.op1) && isImmediate(node.op2)) {
       long long int immediate = 0x0;
@@ -178,6 +181,15 @@ void GeradorElf::assemble(textNode& node) {
       iss >> std::hex >> immediate;
       int size = sizeof(immediate);
       node.code = (node.code << size * 4) | this->reverseNumber(immediate);
+    } else if (isRegister(node.op1) && isMemory(node.op2)) {
+      node.op2 = this->filterMemory( node.op2 );
+      if (!isRegister(node.op2)) {
+        node.code = 0xB8LL + this->getRegistersNumber(node.op1);
+        memoryAccess = this->findSymbol( node.op2 );
+        int size = sizeof(memoryAccess.position);
+        node.code = (node.code << size * 4) | 
+          this->reverseNumber(memoryAccess.position);
+      }
     }
     node.valid = true;
   }
@@ -224,16 +236,16 @@ void GeradorElf::assemble(textNode& node) {
         node.valid = false;
         node.jump = label.label;
         // avanca pc
-        int count = this->numberOfDigits(node.code, 16) / 2;
-        if (this->numberOfDigits(node.code, 16) % 2 != 0) count++;
-        this->currentTextPosition += count + 0x6LL;
+        long long int count = this->numberOfDigits(node.code, 16) / 2;
+        if (this->numberOfDigits(node.code, 16) % 2 != 0) count += 0x1;
+        this->currentTextPosition += count;
       }
     }
   }  
 
   if ( node.valid ) {
-    int count = this->numberOfDigits(node.code, 16) / 2;
-    if (this->numberOfDigits(node.code, 16) % 2 != 0) count++;
+    long long int count = this->numberOfDigits(node.code, 16) / 2;
+    if (this->numberOfDigits(node.code, 16) % 2 != 0) count += 0x1;
     this->currentTextPosition += count;
     node.label = this->currentLabel;
   }
@@ -346,7 +358,7 @@ std::string GeradorElf::removeMultipleSpaces(std::string line) {
 
 std::string GeradorElf::getOp2( std::string& line ) {
   std::string op = "";
-  op = line.substr( 1, line.length() - 1 );
+  op = line.substr( 0, line.length() );
   line = "";
   return op;
 }
@@ -385,7 +397,7 @@ void GeradorElf::storeLabel( std::string line, long long int address ) {
 
   for (unsigned int i = 0; i < this->labels.size(); i++) {
     if ( this->labels[i].label == node.label ) {
-      if ( this->labels[i].address == -1 ) { 
+      if ( this->labels[i].address == -1LL ) { 
         this->labels[i].address = address;
       }
     }
