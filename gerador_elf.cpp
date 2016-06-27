@@ -164,7 +164,8 @@ void GeradorElf::assemble(textNode& node) {
   node.valid = false;
 
   if (this->undercase(node.instruction) == "mov") {
-    if (isRegister(node.op1) && isMemory(node.op2)) {
+    if (isRegister(node.op1) 
+      && isMemory(this->removeMultipleSpaces(node.op2))) {
       node.op2 = this->filterMemory( node.op2 );
       if (!isRegister(node.op2)) {
         memoryAccess = this->findSymbol( node.op2 );
@@ -195,11 +196,11 @@ void GeradorElf::assemble(textNode& node) {
   }
 
   if (this->undercase(node.instruction) == "add") {
-    if (isRegister(node.op1) && isMemory(node.op2)) {
+    if (isRegister(node.op1) && 
+      isMemory(this->removeMultipleSpaces(node.op2))) {
       node.op2 = this->filterMemory( node.op2 );
       if (!this->isRegister(node.op2)) 
-        memoryAccess = this->findSymbol( node.op2 );;
-      // TODO else caso tenhamos um registrador com ponteiro para a memoria
+        memoryAccess = this->findSymbol( node.op2 );
       if (node.op1 == "eax") {
         int size = sizeof(memoryAccess.position);
         node.code = (0x0305LL << size * 4) 
