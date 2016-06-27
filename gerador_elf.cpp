@@ -248,6 +248,10 @@ void GeradorElf::assemble(textNode& node) {
       node.op2 = this->filterMemory(node.op2);
       if ( !this->isRegister( node.op2 ) ) {
         memoryAccess = this->findSymbol( node.op2 );
+        int size = sizeof(memoryAccess.position);
+        node.code = (0xF725LL << size * 4) | 
+          this->reverseNumber(memoryAccess.position);
+        node.valid = true;
       }
     }
   }
@@ -374,12 +378,16 @@ std::string GeradorElf::getOp2( std::string& line ) {
 
 std::string GeradorElf::getOp1( std::string& line ) {
   std::string op = "";
-  int found = line.find( "," );
+  int foundComma = line.find( "," );
+  int foundSpace = line.find( " " );
   int endLine = line.find( "\n" );
 
-  if (found != -1) {
-    op = line.substr(0,found);
-    line = line.substr(found + 1, line.length());
+  if (foundComma != -1) {
+    op = line.substr(0,foundComma);
+    line = line.substr(foundComma + 1, line.length());
+  } else if (foundSpace != -1 && foundComma == -1) {
+    op = line.substr(0,foundSpace);
+    line = line.substr(foundSpace + 1, line.length());
   } else if ( op.empty() ) {
     op = line.substr( 0, endLine );
     line = "";
