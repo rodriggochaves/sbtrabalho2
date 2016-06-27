@@ -241,7 +241,16 @@ void GeradorElf::assemble(textNode& node) {
         this->currentTextPosition += count;
       }
     }
-  }  
+  }
+
+  if (this->undercase(node.instruction) == "mul") {
+    if ( this->isMemory(node.op2) ) {
+      node.op2 = this->filterMemory(node.op2);
+      if ( !this->isRegister( node.op2 ) ) {
+        memoryAccess = this->findSymbol( node.op2 );
+      }
+    }
+  }
 
   if ( node.valid ) {
     long long int count = this->numberOfDigits(node.code, 16) / 2;

@@ -6,6 +6,8 @@ call LerInt
 push h
 call LerInt
 mov eax,[b]
+mul dword [h]
+div dword [dois]
 section .data
 buf times 11 db 0
 b dd 0

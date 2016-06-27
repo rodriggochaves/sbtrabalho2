@@ -30,3 +30,6 @@ ex0.o
 ex0
 # added by GitSavvy
 /ex1
+
+gerador.o
+gerador
